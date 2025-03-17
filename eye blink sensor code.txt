@@ -1,0 +1,50 @@
+import RPi.GPIO as GPIO
+import time
+
+# Define GPIO pins
+BLINK_SENSOR_PIN = 18  # GPIO18 for sensor input
+LED_PIN = 23          # GPIO23 for LED output
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)  # Use BCM numbering
+GPIO.setup(BLINK_SENSOR_PIN, GPIO.IN)  # Sensor as input
+GPIO.setup(LED_PIN, GPIO.OUT)          # LED as output
+
+# Initialize LED to OFF
+GPIO.output(LED_PIN, GPIO.LOW)
+
+# Variable to store start time
+start_time = 0
+
+def get_time_delay():
+    """Calculate time difference in seconds"""
+    current_time = time.time()
+    return int(current_time - start_time)
+
+try:
+    print("Eye Blink Sensor Started. Press CTRL+C to exit")
+    
+    while True:
+        # Check if sensor detects a blink (assuming active-low sensor)
+        if GPIO.input(BLINK_SENSOR_PIN) == GPIO.LOW:
+            start_time = time.time()
+            while GPIO.input(BLINK_SENSOR_PIN) == GPIO.LOW:
+                GPIO.output(LED_PIN, GPIO.LOW)  # LED OFF during blink
+                time.sleep(0.1)  # Small delay to prevent CPU overload
+                
+        else:
+            # After blink ends, check duration
+            delay = get_time_delay()
+            if delay >= 3:  # If blink duration was 3+ seconds
+                GPIO.output(LED_PIN, GPIO.HIGH)  # Turn LED ON
+            else:
+                GPIO.output(LED_PIN, GPIO.LOW)   # Keep LED OFF
+                
+        time.sleep(0.1)  # Small delay to prevent CPU overload
+
+except KeyboardInterrupt:
+    print("\nProgram terminated by user")
+
+finally:
+    GPIO.cleanup()  # Clean up GPIO settings
+    print("GPIO cleanup completed")
